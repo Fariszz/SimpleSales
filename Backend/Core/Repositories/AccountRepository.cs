@@ -29,7 +29,32 @@ public class AccountRepository: IAccountRepository
     
     public AuthenticateResponse Authenticate(AuthenticateRequest model, string ipAddress)
     {
-        throw new System.NotImplementedException();
+        var account = _context.Users.SingleOrDefault(x => x.Email == model.Email);
+        
+        // validate
+        if (account == null || !BCrypt.Net.BCrypt.Verify(model.Password, account.Password))
+        {
+            throw new ApplicationException("Email or password is incorrect");
+        }
+        
+        // authentication successful so generate jwt and refresh tokens
+        var jwtToken = _jwtRepository.GenerateToken(account);
+        var refreshToken = _jwtRepository.GenerateRefreshToken(ipAddress);
+        account.RefreshTokens.Add(refreshToken);
+        
+        // remove old refresh tokens from account
+        removeOldRefreshTokens(account);
+        
+        // save changes to db
+        _context.Update(account);
+        _context.SaveChanges();
+        
+        // return data in authenticate response object
+        var response = _mapper.Map<AuthenticateResponse>(account);
+        response.JwtToken = jwtToken;
+        response.RefreshToken = refreshToken.Token;
+        
+        return response;
     }
 
     public void Register(RegisterRequest model, string origin)
@@ -54,5 +79,12 @@ public class AccountRepository: IAccountRepository
         // save user
         _context.Users.Add(user);
         _context.SaveChanges();
+    }
+    
+    private void removeOldRefreshTokens(User account)
+    {
+        account.RefreshTokens.RemoveAll(x =>
+            !x.IsActive &&
+            x.Created.AddDays(_applicationSettings.RefreshTokenTTL) <= DateTime.UtcNow);
     }
 }

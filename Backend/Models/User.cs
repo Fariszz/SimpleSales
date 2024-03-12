@@ -2,6 +2,11 @@
 
 public class User
 {
+    public User()
+    {
+        RefreshTokens = new List<RefreshToken>();
+    }
+    
     public int Id { get; set; }
     public string Name { get; set; }
     public string Email { get; set; }

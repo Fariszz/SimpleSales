@@ -84,7 +84,7 @@ public class JwtRepository : IJwtRepository
         
         if (!tokenIsUnique)
         {
-            refreshToken.Token = Convert.ToHexString(RandomNumberGenerator.GetBytes(4));
+            return GenerateRefreshToken(ipAddress);
         }
         
         return refreshToken;
