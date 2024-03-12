@@ -3,6 +3,7 @@ using Backend.Data;
 using Backend.Models;
 using Backend.Utils.Request;
 using Backend.Utils.Response;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using ApplicationException = Backend.Data.ApplicationException;
 
@@ -29,7 +30,9 @@ public class AccountRepository: IAccountRepository
     
     public AuthenticateResponse Authenticate(AuthenticateRequest model, string ipAddress)
     {
-        var account = _context.Users.SingleOrDefault(x => x.Email == model.Email);
+        var account = _context.Users
+            .Include(x => x.Role)
+            .SingleOrDefault(x => x.Email == model.Email);
         
         // validate
         if (account == null || !BCrypt.Net.BCrypt.Verify(model.Password, account.Password))
@@ -53,6 +56,9 @@ public class AccountRepository: IAccountRepository
         var response = _mapper.Map<AuthenticateResponse>(account);
         response.JwtToken = jwtToken;
         response.RefreshToken = refreshToken.Token;
+        
+        // set the Role properti in the response object
+        response.Role = account.Role?.Name;
         
         return response;
     }
