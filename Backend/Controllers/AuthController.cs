@@ -1,4 +1,5 @@
 ﻿using Backend.Core;
+using Backend.Utils;
 using Backend.Utils.Request;
 using Backend.Utils.Response;
 using Microsoft.AspNetCore.Authorization;
@@ -43,6 +44,37 @@ public class AuthController : BaseController
         setTokenCookie(response.RefreshToken);
         
         return Ok(response);
+    }
+    
+    [AllowAnonymous]
+    [HttpPost("refresh-token")]
+    public ActionResult<AuthenticateResponse> RefreshToken()
+    {
+        var refreshToken = Request.Cookies["refreshToken"];
+        var response = _accountRepository.RefreshToken(refreshToken, ipAddress());
+        
+        setTokenCookie(response.RefreshToken);
+        
+        return Ok(response);
+    }
+    
+    [HttpPost("logout")]
+    public IActionResult RevokeToken([FromBody] RevokeTokenRequest model)
+    {
+        // accept token from request body or cookie
+        var token = model.Token ?? Request.Cookies["refreshToken"];
+        
+        if (string.IsNullOrEmpty(token))
+            return BadRequest(new { message = "Token is required" });
+
+        
+        if (!Account.OwnsToken(token)) 
+        {
+            return BadRequest(new { message = "Token is required " });
+        }
+        _accountRepository.RevokeToken(token, ipAddress());
+        
+        return Ok(new { message = "Token revoked" });
     }
     
     private void setTokenCookie(string token)

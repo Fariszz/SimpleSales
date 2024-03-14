@@ -32,7 +32,7 @@ public class JwtRepository : IJwtRepository
             Expires = DateTime.UtcNow.AddMinutes(15),
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
         };
-
+        
         var token = tokenHandler.CreateToken(tokenDescriptior);
         
         return tokenHandler.WriteToken(token);
@@ -44,7 +44,7 @@ public class JwtRepository : IJwtRepository
         
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.ASCII.GetBytes(_applicationSettings.Secret);
-
+        
         try
         {
             tokenHandler.ValidateToken(token, new TokenValidationParameters
@@ -67,7 +67,7 @@ public class JwtRepository : IJwtRepository
             throw;
         }
     }
-
+        
     public RefreshToken GenerateRefreshToken(string ipAddress)
     {
         var refreshToken = new RefreshToken
